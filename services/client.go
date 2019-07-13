@@ -42,7 +42,7 @@ func (client *Client) GetData() ([]interface{}, error) {
 
 	data, err := simplejson.NewFromReader(resp.Body)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return data.GetPath("BEAAPI", "Results", "Data").Array()
