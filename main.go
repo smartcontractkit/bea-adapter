@@ -72,6 +72,7 @@ func StartServer() {
 }
 
 func writeResult(w http.ResponseWriter, jobRunId string, result interface{}) {
+	fmt.Printf("Success: %v\n", result)
 	encoder := json.NewEncoder(w)
 	_ = encoder.Encode(Response{
 		JobRunID:   jobRunId,
@@ -85,6 +86,7 @@ func writeResult(w http.ResponseWriter, jobRunId string, result interface{}) {
 }
 
 func writeError(w http.ResponseWriter, jobRunId string, err interface{}) {
+	fmt.Printf("Error: %v\n", err)
 	encoder := json.NewEncoder(w)
 	_ = encoder.Encode(Response{
 		JobRunID:   jobRunId,
