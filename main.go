@@ -127,12 +127,12 @@ func makePriorityQueue(items []map[string]interface{}) services.PriorityQueue {
 	priorityQueue := services.PriorityQueue{}
 
 	for _, item := range items {
-		val, err := strconv.ParseFloat(item["DataValue"].(string), 64)
+		val, err := strconv.ParseFloat(fmt.Sprint(item["DataValue"]), 64)
 		if err != nil {
 			continue
 		}
 
-		date := strings.Split(item["TimePeriod"].(string), "M")
+		date := strings.Split(fmt.Sprint(item["TimePeriod"]), "M")
 		year, err := strconv.Atoi(date[0])
 		if err != nil {
 			continue
