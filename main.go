@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/smartcontractkit/bea-adapter/services"
 	"log"
 	"net/http"
@@ -169,12 +170,13 @@ func GetDpcergAvg(months int) (float64, error) {
 	var sum float64
 	var count int
 
-	for priorityQueue.Len() > 0 {
-		item := heap.Pop(&priorityQueue).(*services.Item)
-		if count < months {
-			sum += item.Value
-			count++
+	for priorityQueue.Len() > 0 && count < months {
+		item, ok := heap.Pop(&priorityQueue).(*services.Item)
+		if !ok {
+			return 0, errors.New("unable to cast queue item type")
 		}
+		sum += item.Value
+		count++
 	}
 
 	return sum / float64(months), nil
