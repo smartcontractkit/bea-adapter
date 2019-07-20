@@ -42,7 +42,7 @@ func main() {
 }
 
 func StartServer() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/call", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		decoder := json.NewDecoder(r.Body)
@@ -67,6 +67,8 @@ func StartServer() {
 
 		writeResult(w, t.JobId, avgRounded)
 	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 
 	fmt.Println("Listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))

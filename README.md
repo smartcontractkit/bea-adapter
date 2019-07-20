@@ -17,6 +17,8 @@ docker run -d \
     cl-bea-adapter
 ```
 
+Send requests to: `http://docker-ip:8080/call`
+
 ## Configuration
 
 | Key | Description |
