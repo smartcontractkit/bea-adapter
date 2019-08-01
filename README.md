@@ -1,23 +1,28 @@
 # BEA Adapter
 
-## Run with Docker
+## Run in Lambda
 
-Build the image:
+- Install packages
 
-```bash
-docker build . -t cl-bea-adapter
+```
+go get -d -v ./...
+go install -v ./...
 ```
 
-Run the Docker image:
+- Build the binary
 
-```bash
-docker run -d \
-    -p 8080:8080 \
-    -e API_KEY="Your_bea_api_key" \
-    cl-bea-adapter
+```
+go build -o cl-bea
 ```
 
-Send requests to: `http://docker-ip:8080/call`
+- Zip the binary
+
+```
+zip cl-bea.zip cl-bea
+```
+
+- Upload to Lambda, use `cl-bea` as your handler
+- Add the value for the `API_KEY` environment variable
 
 ## Configuration
 

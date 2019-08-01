@@ -1,140 +1,136 @@
 package main
 
 import (
+	"./services"
+
 	"container/heap"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
-	"github.com/smartcontractkit/bea-adapter/services"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/linkpoolio/bridges/bridge"
 )
 
-type Result struct {
-	DataValue  string `json:"DataValue"`
-	SeriesCode string `json:"SeriesCode"`
-	TimePeriod string `json:"TimePeriod"`
+// Bea contains the data format for the response
+type Bea struct {
+	BEAAPI struct {
+		Request struct {
+			RequestParam []struct {
+				ParameterName  string `json:"ParameterName"`
+				ParameterValue string `json:"ParameterValue"`
+			} `json:"RequestParam"`
+		} `json:"Request"`
+		Results struct {
+			Statistic         string `json:"Statistic"`
+			UTCProductionTime string `json:"UTCProductionTime"`
+			Dimensions        []struct {
+				Ordinal  string `json:"Ordinal"`
+				Name     string `json:"Name"`
+				DataType string `json:"DataType"`
+				IsValue  string `json:"IsValue"`
+			} `json:"Dimensions"`
+			Data []struct {
+				TableName       string `json:"TableName"`
+				SeriesCode      string `json:"SeriesCode"`
+				LineNumber      string `json:"LineNumber"`
+				LineDescription string `json:"LineDescription"`
+				TimePeriod      string `json:"TimePeriod"`
+				METRICNAME      string `json:"METRIC_NAME"`
+				CLUNIT          string `json:"CL_UNIT"`
+				UNITMULT        string `json:"UNIT_MULT"`
+				DataValue       string `json:"DataValue"`
+				NoteRef         string `json:"NoteRef,omitempty"`
+			} `json:"Data"`
+			Notes []struct {
+				NoteRef  string `json:"NoteRef"`
+				NoteText string `json:"NoteText"`
+			} `json:"Notes"`
+		} `json:"Results"`
+	} `json:"BEAAPI"`
 }
 
-type Request struct {
-	JobId string `json:"id"`
+var (
+	// APIKey is value for the API_KEY environment variable
+	APIKey  = os.Getenv("API_KEY")
+	// BaseURL is the URL to reach out to
+	BaseURL = "https://apps.bea.gov/api/data/"
+)
+
+// Run calls the endpoint and returns the resulting data
+func (b *Bea) Run(h *bridge.Helper) (interface{}, error) {
+	bea := Bea{}
+	err := h.HTTPCallWithOpts(
+		http.MethodGet,
+		BaseURL,
+		&bea,
+		bridge.CallOpts{
+			Auth: bridge.NewAuth(bridge.AuthParam, "UserID", APIKey),
+			Query: map[string]interface{}{
+				"DataSetName":  "NIPA",
+				"TableName":    "T20804",
+				"ResultFormat": "json",
+				"method":       "getData",
+				"Frequency":    "M",
+				"Year":         "2019,2018",
+			},
+		},
+	)
+
+	var dataValues []string
+	var timePeriods []string
+
+	for _, v := range bea.BEAAPI.Results.Data {
+		if v.SeriesCode == "DPCERG" {
+			dataValues = append(dataValues, v.DataValue)
+			timePeriods = append(timePeriods, v.TimePeriod)
+		}
+	}
+
+	priorityQueue := makePriorityQueue(dataValues, timePeriods)
+
+	var sum float64
+	var count int
+
+	for priorityQueue.Len() > 0 && count < 3 {
+		item, ok := heap.Pop(&priorityQueue).(*services.Item)
+		if !ok {
+			return 0, errors.New("unable to cast queue item type")
+		}
+		sum += item.Value
+		count++
+	}
+
+	result := make(map[string]interface{})
+	result["result"] = sum / float64(3)
+
+	return result, err
 }
 
-type Response struct {
-	JobRunID   string                 `json:"jobRunId"`
-	StatusCode int                    `json:"statusCode"`
-	Status     string                 `json:"status"`
-	Data       map[string]interface{} `json:"data"`
-	Error      interface{}            `json:"error"`
-	Result     interface{}            `json:"result"`
+// Opts is the bridge.Bridge implementation
+func (b *Bea) Opts() *bridge.Opts {
+	return &bridge.Opts{
+		Name:   "BEA",
+		Lambda: true,
+	}
 }
 
 func main() {
-	if os.Getenv("API_KEY") == "" {
-		fmt.Println("Error: missing API key")
-		return
-	}
-
-	StartServer()
+	bridge.NewServer(&Bea{}).Start(8080)
 }
 
-func StartServer() {
-	http.HandleFunc("/call", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		decoder := json.NewDecoder(r.Body)
-		var t Request
-		err := decoder.Decode(&t)
-		if err != nil {
-			writeError(w, t.JobId, err)
-			return
-		}
-
-		avg, err := GetDpcergAvg(3)
-		if err != nil {
-			writeError(w, t.JobId, err)
-			return
-		}
-
-		avgRounded, err := strconv.ParseFloat(fmt.Sprintf("%.3f", avg), 64)
-		if err != nil {
-			writeError(w, t.JobId, err)
-			return
-		}
-
-		writeResult(w, t.JobId, avgRounded)
-	})
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
-
-	fmt.Println("Listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func writeResult(w http.ResponseWriter, jobRunId string, result interface{}) {
-	fmt.Printf("Success: %v\n", result)
-	encoder := json.NewEncoder(w)
-	_ = encoder.Encode(Response{
-		JobRunID:   jobRunId,
-		StatusCode: 200,
-		Status:     "success",
-		Data: map[string]interface{}{
-			"result": result,
-		},
-		Result: result,
-	})
-}
-
-func writeError(w http.ResponseWriter, jobRunId string, err interface{}) {
-	fmt.Printf("Error: %v\n", err)
-	encoder := json.NewEncoder(w)
-	_ = encoder.Encode(Response{
-		JobRunID:   jobRunId,
-		StatusCode: 500,
-		Status:     "error",
-		Error:      err,
-	})
-}
-
-func getDpcergClient() (*services.Client, error) {
-	client, err := services.NewClient()
-	if err != nil {
-		return nil, err
-	}
-
-	client.AddParam("DataSetName", "NIPA")
-	client.AddParam("TableName", "T20804")
-	client.AddParam("UserID", os.Getenv("API_KEY"))
-	client.AddParam("ResultFormat", "json")
-	client.AddParam("method", "getData")
-	client.AddParam("Frequency", "M")
-	client.AddParam("Year", "2019,2018")
-
-	return client, nil
-}
-
-func getDpcergData() ([]interface{}, error) {
-	client, err := getDpcergClient()
-	if err != nil {
-		return nil, err
-	}
-
-	return client.GetData()
-}
-
-func makePriorityQueue(items []map[string]interface{}) services.PriorityQueue {
+func makePriorityQueue(dataValues []string, timePeriods []string) services.PriorityQueue {
 	priorityQueue := services.PriorityQueue{}
 
-	for _, item := range items {
-		val, err := strconv.ParseFloat(fmt.Sprint(item["DataValue"]), 64)
+	for k, item := range dataValues {
+		val, err := strconv.ParseFloat(fmt.Sprint(item), 64)
 		if err != nil {
 			continue
 		}
 
-		date := strings.Split(fmt.Sprint(item["TimePeriod"]), "M")
+		date := strings.Split(fmt.Sprint(timePeriods[k]), "M")
 		year, err := strconv.Atoi(date[0])
 		if err != nil {
 			continue
@@ -150,36 +146,4 @@ func makePriorityQueue(items []map[string]interface{}) services.PriorityQueue {
 	heap.Init(&priorityQueue)
 
 	return priorityQueue
-}
-
-func GetDpcergAvg(months int) (float64, error) {
-	results, err := getDpcergData()
-	if err != nil {
-		return 0, err
-	}
-
-	var items []map[string]interface{}
-
-	for _, i := range results {
-		item := i.(map[string]interface{})
-		if item["SeriesCode"] == "DPCERG" {
-			items = append(items, item)
-		}
-	}
-
-	priorityQueue := makePriorityQueue(items)
-
-	var sum float64
-	var count int
-
-	for priorityQueue.Len() > 0 && count < months {
-		item, ok := heap.Pop(&priorityQueue).(*services.Item)
-		if !ok {
-			return 0, errors.New("unable to cast queue item type")
-		}
-		sum += item.Value
-		count++
-	}
-
-	return sum / float64(months), nil
 }
