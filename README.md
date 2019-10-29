@@ -5,8 +5,7 @@
 - Install packages
 
 ```
-go get -d -v ./...
-go install -v ./...
+go install
 ```
 
 - Build the binary
