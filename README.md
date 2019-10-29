@@ -22,14 +22,16 @@ zip cl-bea.zip cl-bea
 
 - Upload to Lambda, use `cl-bea` as your handler
 - Add the value for the `API_KEY` environment variable
+- Enable Lambda support by setting the `LAMBDA` environment variable to `1`
 
 ## Configuration
 
 | Key | Description |
 |-----|-------------|
 | `API_KEY` | Your BEA API key |
+| `LAMBDA` | Set to 1 |
 
 ## Methods
 
 This adapter will by default get the average of the 3 latest monthly DPCERG values.
-No input is required.
+No input parameters are required.
