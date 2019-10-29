@@ -3,15 +3,15 @@ package main
 import (
 	"testing"
 
-	"github.com/linkpoolio/bridges/bridge"
+	"github.com/linkpoolio/bridges"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestBea_Run(t *testing.T) {
 	bea := Bea{}
 	data := map[string]interface{}{}
-	query, _ := bridge.ParseInterface(data)
-	obj, err := bea.Run(bridge.NewHelper(query))
+	query, _ := bridges.ParseInterface(data)
+	obj, err := bea.Run(bridges.NewHelper(query))
 	assert.Nil(t, err)
 
 	resp, ok := obj.(map[string]interface{})

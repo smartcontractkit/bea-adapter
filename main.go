@@ -1,8 +1,6 @@
 package main
 
 import (
-	"./services"
-
 	"container/heap"
 	"errors"
 	"fmt"
@@ -11,7 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/linkpoolio/bridges/bridge"
+	"github.com/linkpoolio/bridges"
+	"github.com/smartcontractkit/bea-adapter/services"
 )
 
 // Bea contains the data format for the response
@@ -54,20 +53,20 @@ type Bea struct {
 
 var (
 	// APIKey is value for the API_KEY environment variable
-	APIKey  = os.Getenv("API_KEY")
+	APIKey = os.Getenv("API_KEY")
 	// BaseURL is the URL to reach out to
 	BaseURL = "https://apps.bea.gov/api/data/"
 )
 
 // Run calls the endpoint and returns the resulting data
-func (b *Bea) Run(h *bridge.Helper) (interface{}, error) {
+func (b *Bea) Run(h *bridges.Helper) (interface{}, error) {
 	bea := Bea{}
 	err := h.HTTPCallWithOpts(
 		http.MethodGet,
 		BaseURL,
 		&bea,
-		bridge.CallOpts{
-			Auth: bridge.NewAuth(bridge.AuthParam, "UserID", APIKey),
+		bridges.CallOpts{
+			Auth: bridges.NewAuth(bridges.AuthParam, "UserID", APIKey),
 			Query: map[string]interface{}{
 				"DataSetName":  "NIPA",
 				"TableName":    "T20804",
@@ -109,16 +108,16 @@ func (b *Bea) Run(h *bridge.Helper) (interface{}, error) {
 	return result, err
 }
 
-// Opts is the bridge.Bridge implementation
-func (b *Bea) Opts() *bridge.Opts {
-	return &bridge.Opts{
+// Opts is the bridges.Bridge implementation
+func (b *Bea) Opts() *bridges.Opts {
+	return &bridges.Opts{
 		Name:   "BEA",
 		Lambda: true,
 	}
 }
 
 func main() {
-	bridge.NewServer(&Bea{}).Start(8080)
+	bridges.NewServer(&Bea{}).Start(8080)
 }
 
 func makePriorityQueue(dataValues []string, timePeriods []string) services.PriorityQueue {
