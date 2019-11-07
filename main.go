@@ -105,6 +105,9 @@ func (b *Bea) Run(h *bridges.Helper) (interface{}, error) {
 	result := make(map[string]interface{})
 	result["result"] = sum / float64(3)
 
+	if result["result"] == 0 {
+		return nil, errors.New("Could not calculate value")
+	}
 	return result, err
 }
 
