@@ -11,7 +11,7 @@ go install
 - Build the binary
 
 ```
-go build -o cl-bea
+GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o cl-bea
 ```
 
 - Zip the binary
