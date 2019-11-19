@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := build
 .PHONY: build install docker dockerpush
 
-REPO=linkpoolio/asset-price-cl-ea
+REPO=smartcontractkit/bea-adapter
 LDFLAGS=-ldflags "-X github.com/smartcontractkit/bea-adapter/store.Sha=`git rev-parse HEAD`"
 
 gomod:

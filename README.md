@@ -1,5 +1,13 @@
 # BEA Adapter
 
+## Run in Docker
+
+- make docker and run
+```
+make docker
+docker run -p 8080:8080 -e API_KEY=<yourapikey> smartcontractkit/bea-adapter
+```
+
 ## Run in Lambda
 
 - Install packages
