@@ -3,7 +3,7 @@ FROM golang:1.12-alpine as builder
 RUN apk add --no-cache make curl git gcc musl-dev linux-headers
 
 ADD . /go/src/github.com/smartcontractkit/bea-adapter
-RUN cd /go/src/github.com/smartcontractkit/bea-adapter && GO111MODULE=on GOOS=linux GOARCH=amd64 go build -o cl-bea
+RUN cd /go/src/github.com/smartcontractkit/bea-adapter && GO111MODULE=on go build -o cl-bea
 
 # Copy into a second stage container
 FROM alpine:latest

@@ -5,7 +5,7 @@
 - make docker and run
 ```
 make docker
-docker run -p 8080:8080 -e API_KEY=<yourapikey> smartcontractkit/bea-adapter
+docker run -p 8080:8080 -e API_KEY=<yourapikey> bea-adapter
 ```
 
 ## Run in Lambda

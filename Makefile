@@ -1,20 +1,14 @@
 .DEFAULT_GOAL := build
-.PHONY: build install docker dockerpush
-
-REPO=smartcontractkit/bea-adapter
-LDFLAGS=-ldflags "-X github.com/smartcontractkit/bea-adapter/store.Sha=`git rev-parse HEAD`"
+.PHONY: build install docker
 
 gomod:
     export GO111MODULE=on
 
 build: gomod
-	@go build $(LDFLAGS) -o cl-bea
+	@go build -o cl-bea
 
 install: gomod
-	@go install $(LDFLAGS)
+	@go install
 
 docker:
-	@docker build . -t $(REPO)
-
-dockerpush:
-	@docker push $(REPO)
+	@docker build . -t bea-adapter
