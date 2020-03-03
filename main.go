@@ -73,7 +73,7 @@ func (b *Bea) Run(h *bridges.Helper) (interface{}, error) {
 				"ResultFormat": "json",
 				"method":       "getData",
 				"Frequency":    "M",
-				"Year":         "2019,2018",
+				"Year":         "2020,2019",
 			},
 		},
 	)
