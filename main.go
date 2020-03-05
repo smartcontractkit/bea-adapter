@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/linkpoolio/bridges"
 	"github.com/smartcontractkit/bea-adapter/services"
@@ -61,6 +62,7 @@ var (
 // Run calls the endpoint and returns the resulting data
 func (b *Bea) Run(h *bridges.Helper) (interface{}, error) {
 	bea := Bea{}
+	yr := time.Now().Year()
 	err := h.HTTPCallWithOpts(
 		http.MethodGet,
 		BaseURL,
@@ -73,7 +75,7 @@ func (b *Bea) Run(h *bridges.Helper) (interface{}, error) {
 				"ResultFormat": "json",
 				"method":       "getData",
 				"Frequency":    "M",
-				"Year":         "2020,2019",
+				"Year":         fmt.Sprintf("%d,%d", yr, yr-1),
 			},
 		},
 	)
